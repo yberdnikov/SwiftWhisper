@@ -1,4 +1,4 @@
-// swift-tools-version:5.9
+// swift-tools-version:5.5
 import PackageDescription
 
 var exclude: [String] = []
@@ -10,23 +10,20 @@ exclude.append("coreml")
 
 let package = Package(
     name: "SwiftWhisper",
-    platforms: [
-        .macOS(.v14),
-        .iOS(.v17),
-    ],
     products: [
         .library(name: "SwiftWhisper", targets: ["SwiftWhisper"])
     ],
-    dependencies: [
-            // Here we define our package's external dependencies
-            // and from where they can be fetched:
-            .package(
-                name: "whisper.cpp", path: "../whisper.cpp"
-            )
-        ],
     targets: [
-        .target(name: "SwiftWhisper", dependencies: [.product(name: "whisper", package: "whisper.cpp")]),
+        .target(name: "SwiftWhisper", dependencies: [.target(name: "whisper_cpp")]),
+        .target(name: "whisper_cpp",
+                exclude: exclude,
+                cSettings: [
+                    .define("GGML_USE_ACCELERATE", .when(platforms: [.macOS, .macCatalyst, .iOS])),
+                    .define("WHISPER_USE_COREML", .when(platforms: [.macOS, .macCatalyst, .iOS])),
+                    .define("WHISPER_COREML_ALLOW_FALLBACK", .when(platforms: [.macOS, .macCatalyst, .iOS]))
+                ]),
         .testTarget(name: "WhisperTests", dependencies: [.target(name: "SwiftWhisper")], resources: [.copy("TestResources/")])
     ],
     cxxLanguageStandard: CXXLanguageStandard.cxx11
 )
+
